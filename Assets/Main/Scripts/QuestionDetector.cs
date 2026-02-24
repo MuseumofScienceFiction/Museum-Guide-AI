@@ -11,6 +11,8 @@ public class QuestionDetector : MonoBehaviour
     [SerializeField] private Button askButton;
     [SerializeField] private DialogController dialogController;
 
+    [SerializeField] private Button exitButton;
+
     private TMP_Text buttonLabel;
 
     private void Awake()
@@ -18,6 +20,7 @@ public class QuestionDetector : MonoBehaviour
         buttonLabel = askButton.GetComponentInChildren<TMP_Text>();
         askButton.onClick.AddListener(OnAskButtonClicked);
         microphoneRecord.OnRecordStop += OnRecordStopAsync;
+        exitButton.onClick.AddListener(OnExitButtonClicked);
     }
 
     private void OnAskButtonClicked()
@@ -45,5 +48,10 @@ public class QuestionDetector : MonoBehaviour
 
         Debug.Log($"Transcription: {res.Result}");
         dialogController.AskQuestionWithAudio(res.Result);
+    }
+
+    private void OnExitButtonClicked()
+    {
+        Application.Quit();
     }
 }
