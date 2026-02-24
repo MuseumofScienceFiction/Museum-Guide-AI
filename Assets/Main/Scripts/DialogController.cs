@@ -2,16 +2,20 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Text;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 
 public class DialogController : MonoBehaviour
 {
     private const string FunctionsBaseUrl = "https://us-central1-museumai-2a2e6.cloudfunctions.net";
+    private const int RequestTimeout = 120;
 
     [SerializeField] private AudioSource[] audioSources;
     [SerializeField] private Animator animator;
     [SerializeField] private AudioClip errorClip;
+    [SerializeField] private GameObject thinkingIndicator;
+    [SerializeField] private TMP_Text answerText;
 
     [Header("Testing")]
     [SerializeField] private bool useTestAnswerAudio;
@@ -20,41 +24,15 @@ public class DialogController : MonoBehaviour
     public void AskQuestion(string message)
     {
         if (string.IsNullOrEmpty(message)) return;
+        SetThinking(true);
         StartCoroutine(AskQuestionCoroutine(message));
-    }
-
-    private IEnumerator AskQuestionCoroutine(string message)
-    {
-        var body = JsonUtility.ToJson(new RequestWrapper { data = new RequestData { question = message } });
-
-        using (var request = new UnityWebRequest($"{FunctionsBaseUrl}/museumGuide", "POST"))
-        {
-            request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body));
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 120;
-
-            yield return request.SendWebRequest();
-
-            if (request.result != UnityWebRequest.Result.Success)
-            {
-                Debug.Log("Error. Please try again later.");
-                Debug.LogError($"Request error: {request.error}\n{request.downloadHandler.text}");
-                yield break;
-            }
-
-            var response = JsonUtility.FromJson<ResponseWrapper>(request.downloadHandler.text);
-
-            if (response.result != null && !string.IsNullOrEmpty(response.result.answer))
-                Debug.Log(response.result.answer);
-            else
-                Debug.Log("Answer not found.");
-        }
     }
 
     public void AskQuestionWithAudio(string message)
     {
         if (string.IsNullOrEmpty(message)) return;
+        SetThinking(true);
+        StopAllAudio();
 
         if (useTestAnswerAudio)
         {
@@ -65,35 +43,89 @@ public class DialogController : MonoBehaviour
         StartCoroutine(AskQuestionWithAudioCoroutine(message));
     }
 
+    private IEnumerator AskQuestionCoroutine(string message)
+    {
+        using var request = CreatePostRequest("museumGuide", message);
+        yield return request.SendWebRequest();
+
+        var result = ParseResponse(request);
+
+        if (result == null)
+        {
+            SetAnswer("Error. Please try again later.");
+            SetThinking(false);
+            yield break;
+        }
+
+        SetAnswer(!string.IsNullOrEmpty(result.answer) ? result.answer : "Answer not found.");
+        SetThinking(false);
+    }
+
     private IEnumerator AskQuestionWithAudioCoroutine(string message)
     {
-        var body = JsonUtility.ToJson(new RequestWrapper { data = new RequestData { question = message } });
+        using var request = CreatePostRequest("museumGuideWithAudio", message);
+        yield return request.SendWebRequest();
 
-        using (var request = new UnityWebRequest($"{FunctionsBaseUrl}/museumGuideWithAudio", "POST"))
+        var result = ParseResponse(request);
+
+        if (result == null)
         {
-            request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body));
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 120;
+            SetAnswer("Error. Please try again later.");
+            PlayAudio(errorClip);
+            yield break;
+        }
 
-            yield return request.SendWebRequest();
+        if (!string.IsNullOrEmpty(result.answer))
+            SetAnswer(result.answer);
 
-            if (request.result != UnityWebRequest.Result.Success)
-            {
-                Debug.Log("Error. Please try again later.");
-                PlayAudio(errorClip);
-                Debug.LogError($"Request error: {request.error}\n{request.downloadHandler.text}");
-                yield break;
-            }
+        if (!string.IsNullOrEmpty(result.audioBase64))
+            yield return PlayMp3FromBase64(result.audioBase64);
+        else
+            SetThinking(false);
+    }
 
-            var response = JsonUtility.FromJson<ResponseWrapper>(request.downloadHandler.text);
-            if (response.result == null) yield break;
+    private UnityWebRequest CreatePostRequest(string functionName, string message)
+    {
+        var body = JsonUtility.ToJson(new RequestWrapper { data = new RequestData { question = message } });
+        var request = new UnityWebRequest($"{FunctionsBaseUrl}/{functionName}", "POST")
+        {
+            uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body)),
+            downloadHandler = new DownloadHandlerBuffer(),
+            timeout = RequestTimeout
+        };
+        request.SetRequestHeader("Content-Type", "application/json");
+        return request;
+    }
 
-            if (!string.IsNullOrEmpty(response.result.answer))
-                Debug.Log(response.result.answer);
+    private ResponseResult ParseResponse(UnityWebRequest request)
+    {
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogError($"Request error: {request.error}\n{request.downloadHandler.text}");
+            return null;
+        }
 
-            if (!string.IsNullOrEmpty(response.result.audioBase64))
-                yield return PlayMp3FromBase64(response.result.audioBase64);
+        return JsonUtility.FromJson<ResponseWrapper>(request.downloadHandler.text)?.result;
+    }
+
+    private void SetAnswer(string text)
+    {
+        Debug.Log(text);
+        answerText.text = text;
+    }
+
+    private void SetThinking(bool value)
+    {
+        animator.SetBool("thinking", value);
+        thinkingIndicator.SetActive(value);
+    }
+
+    private void StopAllAudio()
+    {
+        foreach (var audioSource in audioSources)
+        {
+            audioSource.Stop();
+            audioSource.clip = null;
         }
     }
 
@@ -103,61 +135,30 @@ public class DialogController : MonoBehaviour
         var path = Path.Combine(Application.temporaryCachePath, "guide_answer.mp3");
         File.WriteAllBytes(path, mp3Bytes);
 
-        using (var www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.MPEG))
-        {
-            yield return www.SendWebRequest();
+        using var www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.MPEG);
+        yield return www.SendWebRequest();
 
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                var clip = DownloadHandlerAudioClip.GetContent(www);
-                PlayAudio(clip);
-            }
-            else
-            {
-                Debug.LogError($"Playback error: {www.error}");
-            }
-        }
+        if (www.result == UnityWebRequest.Result.Success)
+            PlayAudio(DownloadHandlerAudioClip.GetContent(www));
+        else
+            Debug.LogError($"Playback error: {www.error}");
     }
 
     private void PlayAudio(AudioClip audioClip)
     {
+        SetThinking(false);
+
         foreach (var audioSource in audioSources)
         {
             audioSource.clip = audioClip;
             audioSource.Play();
         }
 
-        StartTalkAnimation();
+        animator.SetTrigger(UnityEngine.Random.Range(0, 2) == 0 ? "talk1" : "talk2");
     }
 
-    private void StartTalkAnimation()
-    {
-        var trigger = UnityEngine.Random.Range(0, 2) == 0 ? "talk1" : "talk2";
-        animator.SetTrigger(trigger);
-    }
-
-    [Serializable]
-    private class RequestWrapper
-    {
-        public RequestData data;
-    }
-
-    [Serializable]
-    private class RequestData
-    {
-        public string question;
-    }
-
-    [Serializable]
-    private class ResponseWrapper
-    {
-        public ResponseResult result;
-    }
-
-    [Serializable]
-    private class ResponseResult
-    {
-        public string answer;
-        public string audioBase64;
-    }
+    [Serializable] private class RequestWrapper { public RequestData data; }
+    [Serializable] private class RequestData { public string question; }
+    [Serializable] private class ResponseWrapper { public ResponseResult result; }
+    [Serializable] private class ResponseResult { public string answer; public string audioBase64; }
 }

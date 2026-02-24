@@ -10,6 +10,8 @@ public class QuestionDetector : MonoBehaviour
     [SerializeField] private MicrophoneRecord microphoneRecord;
     [SerializeField] private Button askButton;
     [SerializeField] private DialogController dialogController;
+    [SerializeField] private TMP_Text questionText;
+    [SerializeField] private TMP_Text answerText;
 
     [SerializeField] private Button exitButton;
 
@@ -46,6 +48,8 @@ public class QuestionDetector : MonoBehaviour
         if (res == null)
             return;
 
+        questionText.text = res.Result;
+        answerText.text = "";
         Debug.Log($"Transcription: {res.Result}");
         dialogController.AskQuestionWithAudio(res.Result);
     }
