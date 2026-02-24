@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="Oculus.LipSync.csproj" />
+  <Project Path="Oculus.LipSync.Editor.csproj" />
+</Solution>
