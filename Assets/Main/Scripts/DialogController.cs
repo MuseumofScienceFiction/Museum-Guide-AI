@@ -14,7 +14,7 @@ public class DialogController : MonoBehaviour
     [SerializeField] private AudioSource[] audioSources;
     [SerializeField] private Animator animator;
     [SerializeField] private AudioClip errorClip;
-    [SerializeField] private GameObject thinkingIndicator;
+    [SerializeField] private CharecterEffectsHelper charecterEffectsHelper;
     [SerializeField] private TMP_Text answerText;
 
     [Header("Testing")]
@@ -117,7 +117,7 @@ public class DialogController : MonoBehaviour
     private void SetThinking(bool value)
     {
         animator.SetBool("thinking", value);
-        thinkingIndicator.SetActive(value);
+        charecterEffectsHelper.IsThinking = value;
     }
 
     private void StopAllAudio()
