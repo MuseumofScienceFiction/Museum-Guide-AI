@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.IO;
 using System.Text;
@@ -9,6 +9,8 @@ using UnityEngine.Networking;
 public class DialogController : MonoBehaviour
 {
     private const string FunctionsBaseUrl = "https://us-central1-museumai-2a2e6.cloudfunctions.net";
+    private const string ElevenLabsUrl = "https://api.elevenlabs.io/v1/text-to-speech";
+    private const string ElevenLabsVoiceId = "TfOkTMvLYzgpJ01mn1zA";
     private const int RequestTimeout = 120;
 
     [SerializeField] private AudioSource[] audioSources;
@@ -17,9 +19,13 @@ public class DialogController : MonoBehaviour
     [SerializeField] private CharecterEffectsHelper charecterEffectsHelper;
     [SerializeField] private TMP_Text answerText;
 
+    [Header("ElevenLabs")]
+    [SerializeField] private string elevenLabsApiKey;
+
     [Header("Testing")]
     [SerializeField] private bool useTestAnswerAudio;
     [SerializeField] private AudioClip testAnswerAudioClip;
+    [SerializeField] private bool useDirectElevenLabs; // Новый флаг для прямого обращения
 
     public void AskQuestion(string message)
     {
@@ -40,8 +46,19 @@ public class DialogController : MonoBehaviour
             return;
         }
 
-        StartCoroutine(AskQuestionWithAudioCoroutine(message));
+        if (useDirectElevenLabs)
+        {
+            StartCoroutine(AskQuestionWithAudioDirectCoroutine(message));
+        }
+        else
+        {
+            StartCoroutine(AskQuestionWithAudioCoroutine(message));
+        }
     }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // СТАРЫЕ МЕТОДЫ (остаются неизменными)
+    // ════════════════════════════════════════════════════════════════════════
 
     private IEnumerator AskQuestionCoroutine(string message)
     {
@@ -83,6 +100,116 @@ public class DialogController : MonoBehaviour
         else
             SetThinking(false);
     }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // НОВЫЙ МЕТОД: Text → ElevenLabs HTTP (прямой)
+    // ════════════════════════════════════════════════════════════════════════
+
+    private IEnumerator AskQuestionWithAudioDirectCoroutine(string message)
+    {
+        // 1. Получить текстовый ответ от Firebase
+        using var textRequest = CreatePostRequest("museumGuide", message);
+        yield return textRequest.SendWebRequest();
+
+        var result = ParseResponse(textRequest);
+
+        if (result == null || string.IsNullOrEmpty(result.answer))
+        {
+            SetAnswer("Error. Please try again later.");
+            PlayAudio(errorClip);
+            yield break;
+        }
+
+        // Показать текст сразу
+        SetAnswer(result.answer);
+
+        // 2. Отправить текст напрямую в ElevenLabs API
+        yield return StartCoroutine(PlayAudioFromElevenLabsDirect(result.answer));
+    }
+
+    private IEnumerator PlayAudioFromElevenLabsDirect(string text)
+    {
+        if (string.IsNullOrEmpty(elevenLabsApiKey))
+        {
+            Debug.LogError("ElevenLabs API Key not set in Inspector!");
+            PlayAudio(errorClip);
+            yield break;
+        }
+
+        string url = $"{ElevenLabsUrl}/{ElevenLabsVoiceId}";
+
+        // Создать TTS request с правильной сериализацией
+        var ttsRequest = new ElevenLabsTTSRequest
+        {
+            text = text,
+            model_id = "eleven_multilingual_v2",
+            voice_settings = new VoiceSettings
+            {
+                stability = 0.5f,
+                similarity_boost = 0.8f
+            }
+        };
+
+        string jsonBody = JsonUtility.ToJson(ttsRequest);
+        Debug.Log($"ElevenLabs Request: {jsonBody}");
+
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+
+        using var request = new UnityWebRequest(url, "POST")
+        {
+            uploadHandler = new UploadHandlerRaw(bodyRaw),
+            downloadHandler = new DownloadHandlerBuffer(),
+            timeout = RequestTimeout
+        };
+
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("xi-api-key", elevenLabsApiKey);
+        request.SetRequestHeader("Accept", "audio/mpeg");
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            var mp3Bytes = request.downloadHandler.data;
+
+            if (mp3Bytes != null && mp3Bytes.Length > 0)
+            {
+                var path = Path.Combine(Application.temporaryCachePath, $"guide_{System.Guid.NewGuid()}.mp3");
+                File.WriteAllBytes(path, mp3Bytes);
+
+                using var audioRequest = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.MPEG);
+                yield return audioRequest.SendWebRequest();
+
+                if (audioRequest.result == UnityWebRequest.Result.Success)
+                {
+                    AudioClip clip = DownloadHandlerAudioClip.GetContent(audioRequest);
+                    PlayAudio(clip);
+
+                    yield return new WaitForSeconds(clip.length + 1f);
+                    try { File.Delete(path); } catch { }
+                }
+                else
+                {
+                    Debug.LogError($"Audio decode error: {audioRequest.error}");
+                    PlayAudio(errorClip);
+                }
+            }
+            else
+            {
+                Debug.LogError("No audio data received");
+                PlayAudio(errorClip);
+            }
+        }
+        else
+        {
+            Debug.LogError($"ElevenLabs error: {request.responseCode}\nResponse: {request.downloadHandler.text}");
+            PlayAudio(errorClip);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ (неизменные)
+    // ════════════════════════════════════════════════════════════════════════
 
     private UnityWebRequest CreatePostRequest(string functionName, string message)
     {
@@ -155,6 +282,25 @@ public class DialogController : MonoBehaviour
         }
 
         animator.SetTrigger(UnityEngine.Random.Range(0, 2) == 0 ? "talk1" : "talk2");
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // JSON CLASSES
+    // ════════════════════════════════════════════════════════════════════════
+
+    [System.Serializable]
+    private class ElevenLabsTTSRequest
+    {
+        public string text;
+        public string model_id;
+        public VoiceSettings voice_settings;
+    }
+
+    [System.Serializable]
+    private class VoiceSettings
+    {
+        public float stability;
+        public float similarity_boost;
     }
 
     [Serializable] private class RequestWrapper { public RequestData data; }
