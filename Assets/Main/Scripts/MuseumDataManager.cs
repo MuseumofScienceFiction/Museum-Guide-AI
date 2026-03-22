@@ -54,6 +54,8 @@ public class MuseumDataManager : MonoBehaviour
 
     public MuseumData GetData() => museumData;
 
+    public List<Exhibit> GetExhibits() => museumData?.exhibits ?? new List<Exhibit>();
+
     public string BuildExhibitContext()
     {
         if (museumData?.exhibits == null || museumData.exhibits.Count == 0)

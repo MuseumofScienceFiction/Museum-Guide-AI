@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -80,7 +81,27 @@ If you don't know something, say so gracefully and suggest the visitor ask a hum
             yield break;
         }
 
-        string exhibitContext = MuseumDataManager.Instance.BuildExhibitContext();
+        // Build filtered exhibit context based on question keywords
+        string questionLower = question.ToLower();
+        var allExhibits = MuseumDataManager.Instance.GetExhibits();
+        var relevantExhibits = allExhibits
+            .Where(e => questionLower.Contains(e.title.ToLower()) || 
+                       questionLower.Contains(e.creator.ToLower()) ||
+                       e.details.ToLower().Contains(questionLower.Split(' ')[0])) // Match first word
+            .Take(10)
+            .ToList();
+
+        string exhibitContext;
+        if (relevantExhibits.Any())
+        {
+            exhibitContext = string.Join("\n", relevantExhibits.Select(e => $"{e.title} by {e.creator}: {e.details}"));
+            Debug.Log($"Using {relevantExhibits.Count} relevant exhibits for context.");
+        }
+        else
+        {
+            exhibitContext = MuseumDataManager.Instance.BuildExhibitContext(); // Fallback to full context
+            Debug.Log("No relevant exhibits found, using full context.");
+        }
 
         var messages = new OpenAIChatRequest.Message[]
         {
