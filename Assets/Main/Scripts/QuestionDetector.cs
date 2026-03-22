@@ -9,7 +9,7 @@ public class QuestionDetector : MonoBehaviour
     [SerializeField] private WhisperManager whisper;
     [SerializeField] private MicrophoneRecord microphoneRecord;
     [SerializeField] private Button askButton;
-    [SerializeField] private DialogController dialogController;
+    [SerializeField] private DirectAPIDialogController directDialogController;
     [SerializeField] private TMP_Text questionText;
     [SerializeField] private TMP_Text answerText;
 
@@ -51,7 +51,7 @@ public class QuestionDetector : MonoBehaviour
         questionText.text = res.Result;
         answerText.text = "";
         Debug.Log($"Transcription: {res.Result}");
-        dialogController.AskQuestionWithAudio(res.Result);
+        directDialogController.AskQuestion(res.Result);
     }
 
     private void OnExitButtonClicked()

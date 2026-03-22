@@ -156,6 +156,60 @@ Transform:
   - {fileID: 884071956}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &151202344
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 151202346}
+  - component: {fileID: 151202345}
+  m_Layer: 0
+  m_Name: DirectDialogController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &151202345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151202344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ad685601b16f294e8acb5d0f450d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DirectAPIDialogController
+  settings: {fileID: 11400000, guid: 500313a41a30db44c90bd508550cf629, type: 2}
+  audioSources:
+  - {fileID: 295635728}
+  - {fileID: 1368127403}
+  animator: {fileID: 295635726}
+  errorClip: {fileID: 8300000, guid: 9a9f9e4e36f02db4c8deb50136caa993, type: 3}
+  charecterEffectsHelper: {fileID: 1755080107}
+  answerText: {fileID: 237797043}
+  useTestAnswerAudio: 0
+  testAnswerAudioClip: {fileID: 8300000, guid: fc2a9715c0c7b3641b8843a839d6c54e, type: 3}
+--- !u!4 &151202346
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151202344}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &196187454
 GameObject:
   m_ObjectHideFlags: 0
@@ -2071,59 +2125,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1088100477088425305, guid: e4cce1bd0d2e80c4385f088d82559b22, type: 3}
   m_PrefabInstance: {fileID: 329157194}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &662713359
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 662713360}
-  - component: {fileID: 662713361}
-  m_Layer: 0
-  m_Name: DialogController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &662713360
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 662713359}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &662713361
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 662713359}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef01258761ea9d14cb83124406798e0c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DialogController
-  audioSources:
-  - {fileID: 295635728}
-  - {fileID: 1368127403}
-  animator: {fileID: 295635726}
-  errorClip: {fileID: 8300000, guid: 9a9f9e4e36f02db4c8deb50136caa993, type: 3}
-  charecterEffectsHelper: {fileID: 1755080107}
-  answerText: {fileID: 237797043}
-  useTestAnswerAudio: 0
-  testAnswerAudioClip: {fileID: 8300000, guid: fc2a9715c0c7b3641b8843a839d6c54e, type: 3}
 --- !u!137 &702404980 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3907441901271093960, guid: e4cce1bd0d2e80c4385f088d82559b22, type: 3}
@@ -2330,7 +2331,7 @@ MonoBehaviour:
   whisper: {fileID: 2075693002}
   microphoneRecord: {fileID: 2075693001}
   askButton: {fileID: 982061647}
-  dialogController: {fileID: 662713361}
+  directDialogController: {fileID: 151202345}
   questionText: {fileID: 301542292}
   answerText: {fileID: 237797043}
   exitButton: {fileID: 979846245}
@@ -8862,6 +8863,6 @@ SceneRoots:
   - {fileID: 1033930058}
   - {fileID: 1564734474}
   - {fileID: 862005021}
-  - {fileID: 662713360}
+  - {fileID: 151202346}
   - {fileID: 329157194}
   - {fileID: 1728084343}
