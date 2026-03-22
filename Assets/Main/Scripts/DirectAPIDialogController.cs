@@ -88,7 +88,7 @@ If you don't know something, say so gracefully and suggest the visitor ask a hum
             .Where(e => questionLower.Contains(e.title.ToLower()) || 
                        questionLower.Contains(e.creator.ToLower()) ||
                        e.details.ToLower().Contains(questionLower.Split(' ')[0])) // Match first word
-            .Take(10)
+            .Take(15)
             .ToList();
 
         string exhibitContext;
