@@ -9,11 +9,12 @@ public class QuestionDetector : MonoBehaviour
     [SerializeField] private WhisperManager whisper;
     [SerializeField] private MicrophoneRecord microphoneRecord;
     [SerializeField] private Button askButton;
-    [SerializeField] private DialogController dialogController;
+    [SerializeField] private DirectAPIDialogController directDialogController;
     [SerializeField] private TMP_Text questionText;
     [SerializeField] private TMP_Text answerText;
 
     [SerializeField] private Button exitButton;
+    [SerializeField] private VoskSpeechRecognizer voskRecognizer;
 
     private TMP_Text buttonLabel;
 
@@ -29,6 +30,9 @@ public class QuestionDetector : MonoBehaviour
     {
         if (!microphoneRecord.IsRecording)
         {
+            if (voskRecognizer != null)
+                voskRecognizer.StopListening();
+
             microphoneRecord.StartRecord();
             buttonLabel.text = "Stop";
         }
@@ -51,7 +55,10 @@ public class QuestionDetector : MonoBehaviour
         questionText.text = res.Result;
         answerText.text = "";
         Debug.Log($"Transcription: {res.Result}");
-        dialogController.AskQuestionWithAudio(res.Result);
+        directDialogController.AskQuestion(res.Result);
+
+        if (voskRecognizer != null)
+            voskRecognizer.StartListening();
     }
 
     private void OnExitButtonClicked()
