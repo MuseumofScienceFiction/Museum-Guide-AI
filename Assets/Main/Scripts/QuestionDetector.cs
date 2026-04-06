@@ -14,6 +14,7 @@ public class QuestionDetector : MonoBehaviour
     [SerializeField] private TMP_Text answerText;
 
     [SerializeField] private Button exitButton;
+    [SerializeField] private VoskSpeechRecognizer voskRecognizer;
 
     private TMP_Text buttonLabel;
 
@@ -29,6 +30,9 @@ public class QuestionDetector : MonoBehaviour
     {
         if (!microphoneRecord.IsRecording)
         {
+            if (voskRecognizer != null)
+                voskRecognizer.StopListening();
+
             microphoneRecord.StartRecord();
             buttonLabel.text = "Stop";
         }
@@ -52,6 +56,9 @@ public class QuestionDetector : MonoBehaviour
         answerText.text = "";
         Debug.Log($"Transcription: {res.Result}");
         directDialogController.AskQuestion(res.Result);
+
+        if (voskRecognizer != null)
+            voskRecognizer.StartListening();
     }
 
     private void OnExitButtonClicked()
