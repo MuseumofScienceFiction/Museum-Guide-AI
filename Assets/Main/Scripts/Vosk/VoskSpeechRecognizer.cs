@@ -5,36 +5,120 @@ using Vosk;
 
 public class VoskSpeechRecognizer : MonoBehaviour
 {
-    [Header("Model")]
-    [Tooltip("Folder name inside StreamingAssets that contains the Vosk model")]
-    [SerializeField] private string modelPath = "vosk-model";
+    [Serializable]
+    public class LanguageModel
+    {
+        [Tooltip("Display name, e.g. English, Русский")]
+        public string languageName;
+
+        [Tooltip("Folder name inside StreamingAssets that contains the Vosk model")]
+        public string modelFolder;
+    }
+
+    [Header("Language Models")]
+    [Tooltip("List of available language models inside StreamingAssets")]
+    [SerializeField] private LanguageModel[] languages = new[]
+    {
+        new LanguageModel { languageName = "English", modelFolder = "vosk-model-en" },
+        new LanguageModel { languageName = "Русский", modelFolder = "vosk-model-ru" }
+    };
+
+    [Tooltip("Index into the languages array to load on Start")]
+    [SerializeField] private int defaultLanguageIndex;
 
     [Header("Microphone")]
     [SerializeField] private int sampleRate = 16000;
 
     public event Action<string> OnPartialResult;
+    public event Action<string> OnLanguageChanged;
+    public event Action<byte[]> OnPcmData;
 
     public bool IsModelLoaded { get; private set; }
+    public string CurrentLanguage => _currentLanguageIndex >= 0 && _currentLanguageIndex < languages.Length
+        ? languages[_currentLanguageIndex].languageName
+        : string.Empty;
 
     private Model _model;
     private VoskRecognizer _recognizer;
     private AudioClip _micClip;
     private int _lastSamplePos;
     private bool _isRecording;
+    private int _currentLanguageIndex = -1;
 
     private void Start()
     {
-        LoadModel();
+        LoadModel(defaultLanguageIndex);
     }
 
-    private void LoadModel()
+    /// <summary>
+    /// Switch to a different language at runtime by index into the <see cref="languages"/> array.
+    /// </summary>
+    public void SwitchLanguage(int languageIndex)
     {
-        var fullPath = Path.Combine(Application.streamingAssetsPath, modelPath);
+        if (languageIndex < 0 || languageIndex >= languages.Length)
+        {
+            Debug.LogError($"[Vosk] Invalid language index: {languageIndex}. Available: 0–{languages.Length - 1}.");
+            return;
+        }
+
+        if (languageIndex == _currentLanguageIndex)
+        {
+            Debug.Log($"[Vosk] Language '{languages[languageIndex].languageName}' is already active.");
+            return;
+        }
+
+        var wasRecording = _isRecording;
+        if (wasRecording) StopListening();
+
+        DisposeModel();
+        LoadModel(languageIndex);
+
+        if (wasRecording && IsModelLoaded) StartListening();
+    }
+
+    /// <summary>
+    /// Switch to a different language at runtime by name (case-insensitive).
+    /// </summary>
+    public void SwitchLanguage(string languageName)
+    {
+        for (var i = 0; i < languages.Length; i++)
+        {
+            if (string.Equals(languages[i].languageName, languageName, StringComparison.OrdinalIgnoreCase))
+            {
+                SwitchLanguage(i);
+                return;
+            }
+        }
+
+        Debug.LogError($"[Vosk] Language '{languageName}' not found in the configured list.");
+    }
+
+    /// <summary>
+    /// Returns the names of all configured languages.
+    /// </summary>
+    public string[] GetAvailableLanguages()
+    {
+        var names = new string[languages.Length];
+        for (var i = 0; i < languages.Length; i++)
+            names[i] = languages[i].languageName;
+        return names;
+    }
+
+    private void LoadModel(int languageIndex)
+    {
+        if (languageIndex < 0 || languageIndex >= languages.Length)
+        {
+            Debug.LogError($"[Vosk] Invalid language index: {languageIndex}.");
+            return;
+        }
+
+        var lang = languages[languageIndex];
+        var fullPath = Path.Combine(Application.streamingAssetsPath, lang.modelFolder);
 
         if (!Directory.Exists(fullPath))
         {
             Debug.LogError($"[Vosk] Model not found at: {fullPath}\n" +
-                           "Download a model from https://alphacephei.com/vosk/models and extract it into StreamingAssets/vosk-model.");
+                           "Download a model from https://alphacephei.com/vosk/models and extract it into StreamingAssets/" + lang.modelFolder + ".");
             return;
         }
 
@@ -46,13 +130,15 @@ public class VoskSpeechRecognizer : MonoBehaviour
             _recognizer.SetMaxAlternatives(0);
             _recognizer.SetWords(true);
             IsModelLoaded = true;
-            Debug.Log("[Vosk] Model loaded successfully.");
+            _currentLanguageIndex = languageIndex;
+            Debug.Log($"[Vosk] Model loaded successfully: {lang.languageName} ({lang.modelFolder})");
 
+            OnLanguageChanged?.Invoke(lang.languageName);
             StartListening();
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[Vosk] Failed to load model: {ex.Message}");
+            Debug.LogError($"[Vosk] Failed to load model for '{lang.languageName}': {ex.Message}");
         }
     }
 
@@ -99,6 +185,8 @@ public class VoskSpeechRecognizer : MonoBehaviour
 
         var pcmBytes = FloatToPcm16(samples);
 
+        OnPcmData?.Invoke(pcmBytes);
+
         if (_recognizer.AcceptWaveform(pcmBytes, pcmBytes.Length))
         {
             var json = _recognizer.Result();
@@ -128,6 +216,15 @@ public class VoskSpeechRecognizer : MonoBehaviour
         return bytes;
     }
 
+    private void DisposeModel()
+    {
+        _recognizer?.Dispose();
+        _recognizer = null;
+        _model?.Dispose();
+        _model = null;
+        IsModelLoaded = false;
+    }
+
     private void OnDestroy()
     {
         if (_isRecording)
@@ -136,8 +233,7 @@ public class VoskSpeechRecognizer : MonoBehaviour
             _isRecording = false;
         }
 
-        _recognizer?.Dispose();
-        _model?.Dispose();
+        DisposeModel();
     }
 
     [Serializable]

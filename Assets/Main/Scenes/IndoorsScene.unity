@@ -198,6 +198,8 @@ MonoBehaviour:
   errorClip: {fileID: 8300000, guid: 9a9f9e4e36f02db4c8deb50136caa993, type: 3}
   charecterEffectsHelper: {fileID: 788307078}
   answerText: {fileID: 237797043}
+  maxHistoryTurns: 5
+  historyClearTimeout: 120
 --- !u!4 &151202346
 Transform:
   m_ObjectHideFlags: 0
@@ -2392,13 +2394,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62044f140587051499a66d59109c797b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuestionDetector
+  whisperMode: 1
   whisper: {fileID: 2075693002}
+  apiSettings: {fileID: 11400000, guid: 500313a41a30db44c90bd508550cf629, type: 2}
+  openAIWhisperLanguage: 
   microphoneRecord: {fileID: 2075693001}
   askButton: {fileID: 982061647}
-  directDialogController: {fileID: 151202345}
   questionText: {fileID: 301542292}
   answerText: {fileID: 237797043}
   exitButton: {fileID: 979846245}
+  directDialogController: {fileID: 151202345}
   voskRecognizer: {fileID: 1087735115}
 --- !u!4 &862005021
 Transform:
@@ -3094,6 +3099,7 @@ GameObject:
   - component: {fileID: 1087735116}
   - component: {fileID: 1087735115}
   - component: {fileID: 1087735114}
+  - component: {fileID: 1087735117}
   m_Layer: 0
   m_Name: VoskSpeechRecognize
   m_TagString: Untagged
@@ -3127,7 +3133,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c04fd7f8ae2a054ca57282f4fda3d3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoskSpeechRecognizer
-  modelPath: vosk-model
+  languages:
+  - languageName: English
+    modelFolder: vosk-model-small-en-us-0.15
+  - languageName: Polish
+    modelFolder: vosk-model-small-pl-0.22
+  - languageName: Russian
+    modelFolder: vosk-model-small-ru-0.22
+  defaultLanguageIndex: 1
   sampleRate: 16000
 --- !u!4 &1087735116
 Transform:
@@ -3144,6 +3157,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1087735117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1087735113}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10af751538234ed449013d054226be18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VoskLanguageDetector
+  speechRecognizer: {fileID: 1087735115}
+  detectionLanguages:
+  - languageName: English
+    smallModelFolder: vosk-model-small-en-us-0.15
+  - languageName: Polish
+    smallModelFolder: vosk-model-small-pl-0.22
+  - languageName: Russian
+    smallModelFolder: vosk-model-small-ru-0.22
+  sampleRate: 16000
+  minWordsToSwitch: 2
+  debugLog: 0
 --- !u!1 &1132062638
 GameObject:
   m_ObjectHideFlags: 0
@@ -4698,12 +4734,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: com.whisper.unity::Whisper.WhisperManager
   logLevel: 1
-  modelPath: Whisper/ggml-base.en-q5_1.bin
+  modelPath: Whisper/ggml-base.bin
   isModelPathInStreamingAssets: 1
   initOnAwake: 1
   useGpu: 1
   flashAttention: 0
-  language: en
+  language: 
   translateToEnglish: 0
   strategy: 0
   noContext: 1

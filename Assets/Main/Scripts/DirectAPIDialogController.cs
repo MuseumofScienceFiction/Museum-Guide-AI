@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,6 +19,16 @@ public class DirectAPIDialogController : MonoBehaviour
     [SerializeField] private AudioClip errorClip;
     [SerializeField] private CharecterEffectsHelper charecterEffectsHelper;
     [SerializeField] private TMP_Text answerText;
+
+    [Header("Conversation History")]
+    [Tooltip("Maximum number of Q&A pairs to keep in context (0 = no history)")]
+    [SerializeField] private int maxHistoryTurns = 5;
+
+    [Tooltip("Seconds of inactivity before conversation history is cleared (0 = never auto-clear)")]
+    [SerializeField] private float historyClearTimeout = 300f;
+
+    private readonly List<OpenAIChatRequest.Message> _conversationHistory = new List<OpenAIChatRequest.Message>();
+    private Coroutine _clearHistoryCoroutine;
 
     private const string SYSTEM_PROMPT = @"You are Maria, the iconic robot from the 1927 film Metropolis,
 now serving as the virtual guide at the Museum of Science Fiction.
@@ -49,6 +60,7 @@ If you don't know something, say so gracefully and suggest the visitor ask a hum
             return;
         }
 
+        RestartClearTimer();
         SetThinking(true);
         StopAllAudio();
         StartCoroutine(AskQuestionDirectCoroutine(message));
@@ -103,20 +115,27 @@ If you don't know something, say so gracefully and suggest the visitor ask a hum
             Debug.Log("No relevant exhibits found, using full context.");
         }
 
-        var messages = new OpenAIChatRequest.Message[]
+        var messageList = new List<OpenAIChatRequest.Message>
         {
             new OpenAIChatRequest.Message { role = "system", content = SYSTEM_PROMPT },
-            new OpenAIChatRequest.Message { role = "system", content = exhibitContext },
-            new OpenAIChatRequest.Message { role = "user", content = question }
+            new OpenAIChatRequest.Message { role = "system", content = exhibitContext }
         };
+
+        // Append conversation history
+        messageList.AddRange(_conversationHistory);
+
+        // Append current question
+        messageList.Add(new OpenAIChatRequest.Message { role = "user", content = question });
 
         var requestData = new OpenAIChatRequest
         {
             model = settings.OpenAIModel,
-            messages = messages,
+            messages = messageList.ToArray(),
             max_tokens = 200,
             temperature = 0.7f
         };
+
+        Debug.Log($"[History] Sending {_conversationHistory.Count / 2} previous turns + current question.");
 
         string jsonBody = JsonUtility.ToJson(requestData);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
@@ -147,6 +166,7 @@ If you don't know something, say so gracefully and suggest the visitor ask a hum
                 else
                 {
                     Debug.Log($"OpenAI Response: {textAnswer}");
+                    AddToHistory(question, textAnswer);
                     onResponse(textAnswer);
                 }
             }
@@ -242,6 +262,43 @@ If you don't know something, say so gracefully and suggest the visitor ask a hum
         {
             Debug.LogWarning($"Could not delete temp file: {ex.Message}");
         }
+    }
+
+    private void AddToHistory(string question, string answer)
+    {
+        _conversationHistory.Add(new OpenAIChatRequest.Message { role = "user", content = question });
+        _conversationHistory.Add(new OpenAIChatRequest.Message { role = "assistant", content = answer });
+
+        // Trim to maxHistoryTurns (each turn = 2 messages: user + assistant)
+        while (_conversationHistory.Count > maxHistoryTurns * 2)
+        {
+            _conversationHistory.RemoveAt(0);
+            _conversationHistory.RemoveAt(0);
+        }
+
+        Debug.Log($"[History] Stored {_conversationHistory.Count / 2}/{maxHistoryTurns} turns.");
+    }
+
+    public void ClearHistory()
+    {
+        _conversationHistory.Clear();
+        Debug.Log("[History] Conversation history cleared.");
+    }
+
+    private void RestartClearTimer()
+    {
+        if (_clearHistoryCoroutine != null)
+            StopCoroutine(_clearHistoryCoroutine);
+
+        if (historyClearTimeout > 0f)
+            _clearHistoryCoroutine = StartCoroutine(ClearHistoryAfterDelay());
+    }
+
+    private IEnumerator ClearHistoryAfterDelay()
+    {
+        yield return new WaitForSeconds(historyClearTimeout);
+        ClearHistory();
+        _clearHistoryCoroutine = null;
     }
 
     private void SetAnswer(string text)

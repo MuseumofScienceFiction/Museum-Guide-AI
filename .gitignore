@@ -91,3 +91,7 @@ sysinfo.txt
 ignore.conf
 *.private.0
 *.private
+
+# API keys - ScriptableObject with secrets
+Assets/Main/Scripts/APIDialogSettings.asset
+Assets/Main/Scripts/APIDialogSettings.asset.meta
