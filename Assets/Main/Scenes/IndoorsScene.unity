@@ -2341,6 +2341,78 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 737808223}
   m_CullTransparentMesh: 1
+--- !u!1 &774574657
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 774574660}
+  - component: {fileID: 774574659}
+  - component: {fileID: 774574658}
+  m_Layer: 5
+  m_Name: CameraPreview
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &774574658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774574657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Texture: {fileID: 0}
+  m_UVRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+--- !u!222 &774574659
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774574657}
+  m_CullTransparentMesh: 1
+--- !u!224 &774574660
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774574657}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 1033930058}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 215, y: 300}
+  m_SizeDelta: {x: 1280, y: 720}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &788307075 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1295157674420007021, guid: 8a5194ea0c6c61649972aa753f7a900a, type: 3}
@@ -2952,6 +3024,7 @@ RectTransform:
   - {fileID: 301542291}
   - {fileID: 1656820956}
   - {fileID: 237797042}
+  - {fileID: 774574660}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -3294,6 +3367,112 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &1183631723
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1183631726}
+  - component: {fileID: 1183631725}
+  - component: {fileID: 1183631724}
+  m_Layer: 0
+  m_Name: PoseDetector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1183631724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183631723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bd09370a7a260f4e99f74cef4d46ae5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GestureDetector
+  poseDetector: {fileID: 1183631725}
+  minVisibility: 0.5
+  cooldownSeconds: 1.5
+  waveMinOscillations: 3
+  waveTimeWindow: 2
+  waveMinAmplitude: 0.03
+  tposeAngleTolerance: 25
+  tposeMinExtension: 1.5
+  squatKneeAngle: 120
+  leanAngleThreshold: 15
+  OnGestureDetected:
+    m_PersistentCalls:
+      m_Calls: []
+  OnWave:
+    m_PersistentCalls:
+      m_Calls: []
+  OnHandsUp:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTPose:
+    m_PersistentCalls:
+      m_Calls: []
+  OnSquat:
+    m_PersistentCalls:
+      m_Calls: []
+  OnHandRaiseLeft:
+    m_PersistentCalls:
+      m_Calls: []
+  OnHandRaiseRight:
+    m_PersistentCalls:
+      m_Calls: []
+  OnLeanLeft:
+    m_PersistentCalls:
+      m_Calls: []
+  OnLeanRight:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &1183631725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183631723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 083a3339ec0cd9342830d6d895bc299a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PoseDetector
+  webcamDisplay: {fileID: 774574658}
+  requestedWidth: 1280
+  requestedHeight: 720
+  requestedFps: 30
+  modelFileName: pose_landmarker_full.bytes
+  numPoses: 1
+  minDetectionConfidence: 0.5
+  minPresenceConfidence: 0.5
+  minTrackingConfidence: 0.5
+  landmarkColor: {r: 0, g: 1, b: 0, a: 1}
+  connectionColor: {r: 0, g: 1, b: 1, a: 1}
+  landmarkRadius: 6
+--- !u!4 &1183631726
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183631723}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1191974066
 GameObject:
   m_ObjectHideFlags: 0
@@ -9263,3 +9442,4 @@ SceneRoots:
   - {fileID: 1087735116}
   - {fileID: 702132936}
   - {fileID: 1728084343}
+  - {fileID: 1183631726}
